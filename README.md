@@ -1,0 +1,76 @@
+# Stellar Bridge — Stellar ↔ Ethereum
+
+A trust-minimized bridge that lets ERC-20 tokens move onto Stellar as SEP-41 tokens, and back.
+
+> **Status:** Early development — contributions welcome via [Drips Wave](https://www.drips.network/wave)
+
+## Problem
+
+Stellar's ecosystem is isolated from the broader DeFi world. There is no open-source, composable, Soroban-native bridge that the community can audit, fork, and extend.
+
+## Architecture
+
+See [docs/architecture.md](docs/architecture.md) for the full design.
+
+```
+StellarBridge.sol (Ethereum)  ←→  Relayer (TypeScript)  ←→  bridge contract (Soroban/Stellar)
+```
+
+**ETH → Stellar:** Lock ERC-20 → relayer observes → mint SEP-41  
+**Stellar → ETH:** Lock SEP-41 → relayer observes → release ERC-20
+
+## Repo Structure
+
+```
+contracts/
+  stellar/bridge/   # Soroban smart contract (Rust)
+  ethereum/         # Solidity contract + Hardhat
+relayer/            # Off-chain relayer service (TypeScript)
+sdk/                # Client SDK (coming soon)
+docs/               # Architecture and requirements
+scripts/            # Issue creation scripts (Drips Wave)
+```
+
+## Getting Started
+
+### Prerequisites
+
+- Rust + `cargo` with `wasm32-unknown-unknown` target
+- Node.js ≥ 20
+- [Stellar CLI](https://developers.stellar.org/docs/tools/cli/install-cli)
+- `gh` CLI (for issue scripts)
+
+### Stellar contract
+
+```bash
+cd contracts/stellar/bridge
+cargo test
+cargo build --target wasm32-unknown-unknown --release
+```
+
+### Ethereum contract
+
+```bash
+cd contracts/ethereum
+npm install
+npm run compile
+npm test
+```
+
+### Relayer
+
+```bash
+cd relayer
+npm install
+cp ../.env.example ../.env   # fill in your keys
+npm start
+```
+
+## Contributing
+
+This project participates in the **Stellar Wave** on [Drips](https://www.drips.network/wave).  
+Browse open issues — each one has a complexity label and a clear acceptance criteria.
+
+## License
+
+MIT
