@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  stellar-contract:
+    name: Stellar contract (Rust)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            contracts/stellar/bridge/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('contracts/stellar/bridge/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Test
+        working-directory: contracts/stellar/bridge
+        run: cargo test
+
+  ethereum-contract:
+    name: Ethereum contract (Hardhat)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        working-directory: contracts/ethereum
+        run: npm install --legacy-peer-deps
+
+      - name: Compile
+        working-directory: contracts/ethereum
+        run: npm run compile
+
+      - name: Test
+        working-directory: contracts/ethereum
+        run: npm test
+
+  relayer:
+    name: Relayer (TypeScript)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        working-directory: relayer
+        run: npm install
+
+      - name: Build
+        working-directory: relayer
+        run: npm run build
+
+      - name: Test
+        working-directory: relayer
+        run: npm test

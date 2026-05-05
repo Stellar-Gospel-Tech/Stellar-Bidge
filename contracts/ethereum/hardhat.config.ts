@@ -8,6 +8,12 @@ const config: HardhatUserConfig = {
     version: "0.8.24",
     settings: { optimizer: { enabled: true, runs: 200 } },
   },
+  paths: {
+    sources: "./contracts",
+    tests: "./test",
+    cache: "./cache",
+    artifacts: "./artifacts",
+  },
   networks: {
     sepolia: {
       url: process.env.ETH_RPC_URL ?? "",
