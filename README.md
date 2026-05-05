@@ -2,11 +2,13 @@
 
 A trust-minimized bridge that lets ERC-20 tokens move onto Stellar as SEP-41 tokens, and back.
 
-> **Status:** Early development — contributions welcome via [Drips Wave](https://www.drips.network/wave)
+> **Status:** Early development — contributions welcome.
 
 ## Problem
 
 Stellar's ecosystem is isolated from the broader DeFi world. There is no open-source, composable, Soroban-native bridge that the community can audit, fork, and extend.
+
+This project fills that gap: a fully open bridge anyone can run, inspect, and build on.
 
 ## Architecture
 
@@ -26,9 +28,8 @@ contracts/
   stellar/bridge/   # Soroban smart contract (Rust)
   ethereum/         # Solidity contract + Hardhat
 relayer/            # Off-chain relayer service (TypeScript)
-sdk/                # Client SDK (coming soon)
-docs/               # Architecture and requirements
-scripts/            # Issue creation scripts (Drips Wave)
+docs/               # Architecture and build plan
+integration-tests/  # End-to-end tests (coming soon)
 ```
 
 ## Getting Started
@@ -38,7 +39,6 @@ scripts/            # Issue creation scripts (Drips Wave)
 - Rust + `cargo` with `wasm32-unknown-unknown` target
 - Node.js ≥ 20
 - [Stellar CLI](https://developers.stellar.org/docs/tools/cli/install-cli)
-- `gh` CLI (for issue scripts)
 
 ### Stellar contract
 
@@ -68,8 +68,8 @@ npm start
 
 ## Contributing
 
-This project participates in the **Stellar Wave** on [Drips](https://www.drips.network/wave).  
-Browse open issues — each one has a complexity label and a clear acceptance criteria.
+Browse the open issues — each one has a complexity label and clear acceptance criteria.  
+See [docs/plan.md](docs/plan.md) for the full build plan and layer breakdown.
 
 ## License
 
