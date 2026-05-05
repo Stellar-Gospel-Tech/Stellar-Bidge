@@ -1,0 +1,10 @@
+.env
+node_modules/
+dist/
+target/
+artifacts/
+cache/
+typechain-types/
+test_snapshots/
+*.wasm
+scripts/

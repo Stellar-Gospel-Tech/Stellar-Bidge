@@ -1,0 +1,17 @@
+{
+  "name": "stellar-bridge-ethereum",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:testnet": "hardhat run scripts/deploy.ts --network sepolia"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "5.0.0",
+    "hardhat": "2.22.17"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "5.1.0"
+  }
+}
