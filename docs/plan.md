@@ -2,112 +2,103 @@
 
 ## Priority order
 
-The project is built in dependency order. Each layer must be stable before the next starts.
-
 ```
 Layer 1 → Layer 2 → Layer 3 → Layer 4 → Layer 5
 Soroban    Solidity   Relayer   Hardening  SDK
 ```
 
+**Legend:** ✅ done · ⚠️ partial · 🔨 open
+
 ---
 
-## Layer 1 — Soroban bridge contract (highest priority)
+## Layer 1 — Soroban bridge contract ⚠️
 **`contracts/stellar/bridge/`**
 
-Everything else depends on this. The Soroban contract is the most novel piece — there are no open-source references for a Soroban-native bridge, so it needs the most care.
+| Issue | Task | Status | Notes |
+|---|---|---|---|
+| SB-001 | `initialize` — store admin + token, guard re-init | ✅ | 2 passing tests |
+| — | `set_admin` — transfer admin role | ✅ | 1 passing test |
+| SB-002 | `deposit` — auth, lock SEP-41 tokens, emit event | 🔨 | todo! stub with acceptance criteria |
+| SB-003 | `release` — admin auth, replay protection, transfer out | 🔨 | todo! stub with acceptance criteria |
+| SB-004 | Replay protection on `release` | 🔨 | Part of SB-003 |
+| SB-005 | Structured contract events on deposit and release | 🔨 | Part of SB-002/003 |
+| SB-006 | Full test suite — remove all `#[should_panic]` | 🔨 | Blocked on SB-002/003 |
 
-| Issue | Task | Complexity |
-|-------|------|------------|
-| SB-001 | Implement `initialize` — store admin + token, guard against re-init | Trivial |
-| SB-002 | Implement `deposit` — auth, lock SEP-41 tokens, emit event | Medium |
-| SB-003 | Implement `release` — admin auth, transfer tokens to recipient | Medium |
-| SB-004 | Replay protection on `release` — reject duplicate `eth_tx_hash` | Trivial |
-| SB-005 | Emit structured contract events on deposit and release | Trivial |
-| SB-006 | Full test suite — all tests currently `#[should_panic]`, make them pass | Medium |
-
-**Done when:** `cargo test` passes with no `#[should_panic]` markers and the contract builds to WASM.
+**Done when:** `cargo test` passes with no `#[should_panic]` markers and contract builds to WASM.
 
 ---
 
-## Layer 2 — Ethereum Solidity contract
+## Layer 2 — Ethereum Solidity contract ✅
 **`contracts/ethereum/`**
 
-Can be worked in parallel with Layer 1 by a different contributor.
-
-| Issue | Task | Complexity |
-|-------|------|------------|
-| SB-007 | Implement `deposit` — validate, lock ERC-20, emit event | Medium |
-| SB-008 | Implement `release` — owner-only, replay protection, transfer out | Medium |
-| SB-009 | Token whitelist — `addToken` / `removeToken` admin controls | Trivial |
-| SB-010 | Hardhat test suite — deposit, release, replay protection, access control | Medium |
-
-**Done when:** `npm test` passes in `contracts/ethereum/`.
+| Issue | Task | Status | Notes |
+|---|---|---|---|
+| SB-007 | `deposit` — validate, lock ERC-20, emit event | ✅ | 4 tests |
+| SB-008 | `release` — owner-only, replay protection, transfer out | ✅ | 4 tests |
+| SB-009 | Token whitelist — `addToken` / `removeToken` | ✅ | 3 tests |
+| — | Full Hardhat test suite | ✅ | 12/12 passing |
 
 ---
 
-## Layer 3 — Relayer service
+## Layer 3 — Relayer service 🔨
 **`relayer/`**
 
-Depends on Layer 1 + 2 being stable (needs their event signatures and function ABIs).
+Depends on Layer 1 + 2 being stable.
 
 | Issue | Task | Complexity |
-|-------|------|------------|
+|---|---|---|
 | SB-011 | `ethListener.ts` — watch Ethereum `Deposit` events, wait for confirmations | Medium |
 | SB-012 | `stellarListener.ts` — poll Stellar RPC for bridge contract `deposit` events | Medium |
 | SB-013 | `submitter.ts` — `releaseStellar()` build + sign + submit Soroban tx | High |
 | SB-014 | `submitter.ts` — `releaseEthereum()` call Solidity `release()` | Medium |
 | SB-015 | `index.ts` — wire listeners to submitters, token address mapping | Medium |
-| SB-016 | Retry + error handling — failed submissions must retry with backoff | Medium |
+| SB-016 | Retry + error handling — failed submissions retry with backoff | Medium |
 
 **Done when:** Relayer starts, listens on both chains, and successfully relays a transfer on testnet.
 
 ---
 
-## Layer 4 — Hardening
-**Both contracts + relayer**
-
-Depends on Layer 3 being functional end-to-end.
+## Layer 4 — Hardening 🔨
 
 | Issue | Task | Complexity |
-|-------|------|------------|
-| SB-017 | Decimal normalisation — ERC-20 (18 decimals) ↔ SEP-41 (7 decimals) | Medium |
+|---|---|---|
+| SB-017 | Decimal normalisation — ERC-20 (18 dec) ↔ SEP-41 (7 dec) | Medium |
 | SB-018 | Pause / unpause on both contracts (emergency stop) | Medium |
-| SB-019 | Testnet deploy scripts — Sepolia (Ethereum) + Testnet (Stellar) | Medium |
-| SB-020 | Multisig upgrade path — replace single relayer key with m-of-n | High |
-
-**Done when:** Both contracts deployed on testnet, a full round-trip transfer works, and the relayer key is a multisig.
+| SB-019 | Testnet deploy scripts — Sepolia + Stellar Testnet | Medium |
+| SB-020 | Multisig upgrade — replace single relayer key with m-of-n | High |
 
 ---
 
-## Layer 5 — SDK
-**`sdk/`** *(not scaffolded yet — created when Layer 3 is stable)*
-
-A thin TypeScript wrapper so dApps can integrate without touching contracts directly.
+## Layer 5 — SDK 🔨
+**`sdk/`** *(not scaffolded yet)*
 
 | Issue | Task | Complexity |
-|-------|------|------------|
-| SB-021 | `bridge(ethToken, amount, stellarRecipient)` — ETH → Stellar helper | Medium |
-| SB-022 | `bridge(stellarToken, amount, ethRecipient)` — Stellar → ETH helper | Medium |
-| SB-023 | `getTransferStatus(txHash)` — poll both chains for transfer state | Medium |
-
-**Done when:** SDK published to npm, README has a working code example.
+|---|---|---|
+| SB-021 | `bridge(ethToken, amount, stellarRecipient)` — ETH → Stellar | Medium |
+| SB-022 | `bridge(stellarToken, amount, ethRecipient)` — Stellar → ETH | Medium |
+| SB-023 | `getTransferStatus(txHash)` — poll both chains | Medium |
 
 ---
 
-## What is NOT in scope (for now)
+## Open Contributor Issues
 
-- Frontend / UI
-- Support for more than one token pair at launch
-- Mainnet deployment
-- Decentralised validator set (multisig is the stepping stone)
+| Issue | Scope | Complexity | Blocked by |
+|---|---|---|---|
+| **SB-002** | Soroban `deposit` — auth + token lock + event | Medium | — |
+| **SB-003** | Soroban `release` — admin auth + replay protection + transfer | Medium | SB-002 |
+| **SB-006** | Full Soroban test suite (remove `#[should_panic]`) | Medium | SB-002, SB-003 |
+| **SB-011** | `ethListener.ts` | Medium | Layer 1 deployed |
+| **SB-012** | `stellarListener.ts` | Medium | Layer 1 deployed |
+| **SB-013** | `releaseStellar()` in submitter | High | SB-011, SB-012 |
 
 ---
 
-## Repo checklist before applying to Drips Wave
+## Milestones
 
-- [ ] Push repo to GitHub (public)
-- [ ] Set `REPO` in `scripts/create-issues.sh`
-- [ ] Write issue body files (`scripts/issues/issue-01.md` … `issue-20.md`)
-- [ ] Run `./scripts/create-issues.sh all` to create all issues
-- [ ] Apply repo to Stellar Wave Program at drips.network/wave
-- [ ] Wait for SDF approval
+| Milestone | Requires | Status |
+|---|---|---|
+| **M0 — Apply to Drips Wave** | Layer 1 partial + Layer 2 done | ✅ Ready |
+| **M1 — Soroban contract complete** | SB-002, SB-003, SB-006 | 🔨 |
+| **M2 — Relayer running on testnet** | Layer 3 | 🔨 |
+| **M3 — Full round-trip on testnet** | Layer 4 | 🔨 |
+| **M4 — SDK published** | Layer 5 | 🔨 |
