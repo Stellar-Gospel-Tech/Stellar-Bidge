@@ -1,5 +1,5 @@
 #![no_std]
-use soroban_sdk::{contract, contractimpl, contracttype, Address, Bytes, BytesN, Env};
+use soroban_sdk::{contract, contractimpl, contracttype, symbol_short, token, Address, Bytes, BytesN, Env};
 
 #[contracttype]
 pub enum DataKey {
@@ -37,17 +37,29 @@ impl BridgeContract {
 
     /// Lock SEP-41 tokens in this contract so the relayer can mint ERC-20
     /// equivalents on Ethereum.
-    ///
-    /// # TODO (SB-002)
-    /// 1. `from.require_auth()`
-    /// 2. Transfer `amount` of the SEP-41 token from `from` into this contract
-    ///    using the token client: `token::Client::new(&env, &token_addr).transfer(...)`
-    /// 3. Emit a contract event so the relayer can observe it:
-    ///    `env.events().publish((symbol_short!("deposit"), from), (amount, eth_recipient, nonce))`
-    ///
-    /// See issue SB-002 for full acceptance criteria and test cases.
-    pub fn deposit(_env: Env, _from: Address, _amount: i128, _eth_recipient: Bytes, _nonce: u64) {
-        todo!("SB-002: require_auth → transfer tokens into contract → emit deposit event")
+    pub fn deposit(env: Env, from: Address, amount: i128, eth_recipient: Bytes, nonce: u64) {
+        from.require_auth();
+
+        assert!(amount > 0, "amount must be positive");
+
+        let token_addr: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::TokenAddress)
+            .expect("not initialized");
+
+        // Transfer tokens from `from` into this contract
+        token::Client::new(&env, &token_addr).transfer(
+            &from,
+            &env.current_contract_address(),
+            &amount,
+        );
+
+        // Emit event so the relayer can observe and act
+        env.events().publish(
+            (symbol_short!("deposit"), from),
+            (amount, eth_recipient, nonce),
+        );
     }
 
     /// Release locked tokens to `to` after the relayer confirms an ETH deposit.
