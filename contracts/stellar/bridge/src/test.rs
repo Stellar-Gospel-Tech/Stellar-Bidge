@@ -20,16 +20,45 @@ fn setup() -> (Env, Address, Address, Address) {
     (env, admin, user, token_addr)
 }
 
+// ── initialize ────────────────────────────────────────────────────────────────
+
 #[test]
-#[should_panic]
 fn test_initialize() {
     let (env, admin, _user, token_addr) = setup();
     let contract_id = env.register(BridgeContract, ());
     let client = BridgeContractClient::new(&env, &contract_id);
-    // TODO: implement initialize — this test should pass once done
     client.initialize(&admin, &token_addr);
     assert_eq!(client.admin(), admin);
+    assert_eq!(client.token(), token_addr);
 }
+
+#[test]
+#[should_panic(expected = "already initialized")]
+fn test_double_initialize_panics() {
+    let (env, admin, _user, token_addr) = setup();
+    let contract_id = env.register(BridgeContract, ());
+    let client = BridgeContractClient::new(&env, &contract_id);
+    client.initialize(&admin, &token_addr);
+    client.initialize(&admin, &token_addr);
+}
+
+// ── set_admin ─────────────────────────────────────────────────────────────────
+
+#[test]
+fn test_set_admin() {
+    let (env, admin, _user, token_addr) = setup();
+    let contract_id = env.register(BridgeContract, ());
+    let client = BridgeContractClient::new(&env, &contract_id);
+    client.initialize(&admin, &token_addr);
+
+    let new_admin = Address::generate(&env);
+    client.set_admin(&new_admin);
+    assert_eq!(client.admin(), new_admin);
+}
+
+// ── deposit (SB-002) ──────────────────────────────────────────────────────────
+// These tests define the acceptance criteria for SB-002.
+// Remove #[should_panic] once deposit is implemented.
 
 #[test]
 #[should_panic]
@@ -41,10 +70,13 @@ fn test_deposit_locks_tokens() {
 
     let token = TokenClient::new(&env, &token_addr);
     let before = token.balance(&user);
-    // TODO: implement deposit — tokens should move from user into contract
+    // SB-002: tokens should move from user into contract
     client.deposit(&user, &100_0000000_i128, &Bytes::from_array(&env, &[0u8; 20]), &1u64);
     assert_eq!(before - token.balance(&user), 100_0000000_i128);
 }
+
+// ── release + replay protection (SB-003) ─────────────────────────────────────
+// Remove #[should_panic] once release is implemented.
 
 #[test]
 #[should_panic]
@@ -56,7 +88,7 @@ fn test_replay_protection() {
     client.deposit(&user, &200_0000000_i128, &Bytes::from_array(&env, &[0u8; 20]), &1u64);
 
     let hash = BytesN::from_array(&env, &[1u8; 32]);
-    // TODO: implement release with replay protection — second call should panic
+    // SB-003: first release should succeed, second should panic
     client.release(&Address::generate(&env), &100_0000000_i128, &hash);
     client.release(&Address::generate(&env), &100_0000000_i128, &hash);
 }

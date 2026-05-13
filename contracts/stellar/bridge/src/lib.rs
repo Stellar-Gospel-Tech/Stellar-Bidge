@@ -13,38 +13,77 @@ pub struct BridgeContract;
 
 #[contractimpl]
 impl BridgeContract {
-    /// TODO: Store admin and token address. Panic if already initialized.
-    pub fn initialize(_env: Env, _admin: Address, _token: Address) {
-        unimplemented!()
+    /// Initialize the bridge with an admin and the SEP-41 token it manages.
+    /// Panics if called more than once.
+    pub fn initialize(env: Env, admin: Address, token: Address) {
+        assert!(
+            !env.storage().instance().has(&DataKey::Admin),
+            "already initialized"
+        );
+        env.storage().instance().set(&DataKey::Admin, &admin);
+        env.storage().instance().set(&DataKey::TokenAddress, &token);
     }
 
-    /// TODO: Require auth from `from`, transfer `amount` of SEP-41 tokens into
-    /// this contract, then emit a deposit event so the relayer can act.
+    /// Transfer the admin role to a new address.
+    pub fn set_admin(env: Env, new_admin: Address) {
+        let admin: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::Admin)
+            .expect("not initialized");
+        admin.require_auth();
+        env.storage().instance().set(&DataKey::Admin, &new_admin);
+    }
+
+    /// Lock SEP-41 tokens in this contract so the relayer can mint ERC-20
+    /// equivalents on Ethereum.
+    ///
+    /// # TODO (SB-002)
+    /// 1. `from.require_auth()`
+    /// 2. Transfer `amount` of the SEP-41 token from `from` into this contract
+    ///    using the token client: `token::Client::new(&env, &token_addr).transfer(...)`
+    /// 3. Emit a contract event so the relayer can observe it:
+    ///    `env.events().publish((symbol_short!("deposit"), from), (amount, eth_recipient, nonce))`
+    ///
+    /// See issue SB-002 for full acceptance criteria and test cases.
     pub fn deposit(_env: Env, _from: Address, _amount: i128, _eth_recipient: Bytes, _nonce: u64) {
-        unimplemented!()
+        todo!("SB-002: require_auth → transfer tokens into contract → emit deposit event")
     }
 
-    /// TODO: Require admin auth. Check `eth_tx_hash` hasn't been processed (replay
-    /// protection). Transfer `amount` tokens to `to` and mark the hash as processed.
+    /// Release locked tokens to `to` after the relayer confirms an ETH deposit.
+    ///
+    /// # TODO (SB-003)
+    /// 1. Load admin, call `admin.require_auth()`
+    /// 2. Check `DataKey::Processed(eth_tx_hash)` — panic with `"already processed"` if set
+    /// 3. Mark hash as processed: `env.storage().persistent().set(&DataKey::Processed(eth_tx_hash), &true)`
+    /// 4. Transfer `amount` tokens from this contract to `to`
+    /// 5. Emit a release event
+    ///
+    /// See issue SB-003 for full acceptance criteria and test cases.
     pub fn release(_env: Env, _to: Address, _amount: i128, _eth_tx_hash: BytesN<32>) {
-        unimplemented!()
+        todo!("SB-003: admin auth → replay check → mark processed → transfer tokens → emit event")
     }
 
-    /// TODO: Require admin auth. Update the stored admin address.
-    pub fn set_admin(_env: Env, _new_admin: Address) {
-        unimplemented!()
-    }
+    // ── View functions (already implemented) ─────────────────────────────────
 
     pub fn admin(env: Env) -> Address {
-        env.storage().instance().get(&DataKey::Admin).unwrap()
+        env.storage()
+            .instance()
+            .get(&DataKey::Admin)
+            .expect("not initialized")
     }
 
     pub fn token(env: Env) -> Address {
-        env.storage().instance().get(&DataKey::TokenAddress).unwrap()
+        env.storage()
+            .instance()
+            .get(&DataKey::TokenAddress)
+            .expect("not initialized")
     }
 
     pub fn is_processed(env: Env, eth_tx_hash: BytesN<32>) -> bool {
-        env.storage().persistent().has(&DataKey::Processed(eth_tx_hash))
+        env.storage()
+            .persistent()
+            .has(&DataKey::Processed(eth_tx_hash))
     }
 }
 
