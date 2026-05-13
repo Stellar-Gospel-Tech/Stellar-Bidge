@@ -57,11 +57,8 @@ fn test_set_admin() {
 }
 
 // ── deposit (SB-002) ──────────────────────────────────────────────────────────
-// These tests define the acceptance criteria for SB-002.
-// Remove #[should_panic] once deposit is implemented.
 
 #[test]
-#[should_panic]
 fn test_deposit_locks_tokens() {
     let (env, admin, user, token_addr) = setup();
     let contract_id = env.register(BridgeContract, ());
@@ -70,9 +67,11 @@ fn test_deposit_locks_tokens() {
 
     let token = TokenClient::new(&env, &token_addr);
     let before = token.balance(&user);
-    // SB-002: tokens should move from user into contract
     client.deposit(&user, &100_0000000_i128, &Bytes::from_array(&env, &[0u8; 20]), &1u64);
+
+    // Tokens moved from user into the contract
     assert_eq!(before - token.balance(&user), 100_0000000_i128);
+    assert_eq!(token.balance(&contract_id), 100_0000000_i128);
 }
 
 // ── release + replay protection (SB-003) ─────────────────────────────────────
